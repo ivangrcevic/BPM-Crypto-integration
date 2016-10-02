@@ -3,19 +3,39 @@
  */
 (function(){
 
-    var doLoadCert = function(pathToFile) {
-
+    var doLoadCert = function(certFile, password) {
+        var deferred = jQuery.Deferred();
+        //load file
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            var content = evt.target.result;
+            forge.pkcs12.pkcs12FromAsn1(content, password);
+            //get the certificate
+            var bags = p12.getBags({bagType: forge.pki.oids.certBag});
+            var cert = bags[forge.pki.oids.certBag][0].cert;
+            deferred.resolve(cert);
+        };
+        reader.readAsBinaryString(certFile);
+        return deferred.promise();
     };
 
-    var doSign = function(rsaPrivateKey, string) {
-        var sig = new KJUR.crypto.Signature({"alg": "SHA1withRSA"});
-        sig.init(rsaPrivateKey);
-        return sig.signString(string);
+    var doSign = function (cert, string) {
+        //Create message digest with SHA1
+        var md = forge.md.sha1.create();
+        md.update(string);
+        //sign with RSA algorithm (default)
+        return cert.sign(md);
     };
 
     var TEXTS = {
-        "es": {"signButton.text": "Firmar"},
-        "en": {"signButton.text": "Sign"}
+        "es": {
+            "signButton.text": "Firmar",
+            "psswdPromt.text": "Ingrese contraseña... "
+        },
+        "en": {
+            "signButton.text": "Sign",
+            "psswdPromt.text": "Enter Password... "
+        }
     };
 
     var LANGUAGE = "es";
@@ -31,6 +51,8 @@
             return;
         }
 
+        var file;
+
         if (!this.hasClass(IU_ELEM_CLASS)) {
             this.addClass(IU_ELEM_CLASS);
         }
@@ -41,16 +63,30 @@
         signButton.appendTo(this);
 
         fileLoader.change(function (evt){
-            var file = evt.target.files[0];
+            file = evt.target.files[0];
             console.log(file.name);
             console.log(file.size);
         });
         signButton.html(texts["signButton.text"]);
         signButton.click(function (evt){
-            alert("hola!");
+            promptForPassword(texts).then(function (password){
+                doLoadCert(file, password).then(function (cert){
+                    var signature = doSign(cert, "hola como estás");
+                    alert(signature);
+                });
+            });
         });
 
     };
+
+    function promptForPassword(texts) {
+        var deferred = jQuery.Deferred();
+
+        var password  = window.prompt("psswdPromt.text");
+        deferred.resolve(password);
+
+        return deferred.promise();
+    }
 
 
 })();
