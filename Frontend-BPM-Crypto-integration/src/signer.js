@@ -7,15 +7,24 @@
         var deferred = jQuery.Deferred();
         //load file
         var reader = new FileReader();
-        reader.onload = function(evt) {
-            var content = evt.target.result;
-            forge.pkcs12.pkcs12FromAsn1(content, password);
-            //get the certificate
-            var bags = p12.getBags({bagType: forge.pki.oids.certBag});
-            var cert = bags[forge.pki.oids.certBag][0].cert;
-            deferred.resolve(cert);
-        };
-        reader.readAsBinaryString(certFile);
+        reader.onload = (function (theFile){
+            return function(evt) {
+                var content = evt.target.result;
+                var b64 = forge.util.binary.base64.encode(new Uint8Array(content));
+                var p12Der = forge.util.decode64(b64);
+                var p12Asn1 = forge.asn1.fromDer(p12Der);
+                try {
+                    //get the certificate
+                    var p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, password);
+                    var bags = p12.getBags({bagType: forge.pki.oids.certBag});
+                    var cert = bags[forge.pki.oids.certBag][0];
+                    deferred.resolve(cert);
+                } catch (err) {
+                    deferred.reject(err.message);
+                }
+            };
+        })(certFile);
+        reader.readAsArrayBuffer(certFile);
         return deferred.promise();
     };
 
@@ -24,7 +33,8 @@
         var md = forge.md.sha1.create();
         md.update(string);
         //sign with RSA algorithm (default)
-        return cert.sign(md);
+        var privateKey = null;
+        return privateKey.sign(md);
     };
 
     var TEXTS = {
@@ -64,8 +74,7 @@
 
         fileLoader.change(function (evt){
             file = evt.target.files[0];
-            console.log(file.name);
-            console.log(file.size);
+            signButton.addClass('visible');
         });
         signButton.html(texts["signButton.text"]);
         signButton.click(function (evt){
@@ -74,6 +83,8 @@
                     var signature = doSign(cert, "hola como estás");
                     alert(signature);
                 });
+            }, function (err){
+                console.log(err);
             });
         });
 

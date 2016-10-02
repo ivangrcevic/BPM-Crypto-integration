@@ -1,3 +1,7 @@
 .sign-button {
+    display: none;
     margin-left: 10px;
+}
+.sign-button.visible {
+    display: inline-block;
 }

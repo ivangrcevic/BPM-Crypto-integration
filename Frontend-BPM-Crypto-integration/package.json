@@ -1,0 +1,22 @@
+{
+  "name": "frontend-bpm-crypto-integration",
+  "version": "1.0.0",
+  "description": "frontend-bpm-crypto-integration for academic purposes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivangrcevic/BPM-Crypto-integration.git"
+  },
+  "author": "Ivan Grcevic",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ivangrcevic/BPM-Crypto-integration/issues"
+  },
+  "homepage": "https://github.com/ivangrcevic/BPM-Crypto-integration#readme",
+  "dependencies": {
+    "node-forge": "^0.6.42"
+  }
+}
