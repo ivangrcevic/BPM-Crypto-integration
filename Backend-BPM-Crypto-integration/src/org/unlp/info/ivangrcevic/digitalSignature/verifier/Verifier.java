@@ -1,4 +1,4 @@
-package org.unlp.info.ivangrcevic.digitalSignature;
+package org.unlp.info.ivangrcevic.digitalSignature.verifier;
 
 import java.security.*;
 
