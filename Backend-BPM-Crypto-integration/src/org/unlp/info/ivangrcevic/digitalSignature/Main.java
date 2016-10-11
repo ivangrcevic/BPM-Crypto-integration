@@ -21,8 +21,8 @@ public class Main {
         EncodedKeyPair keyPair = KeysGenerator.generateKeyPair("changeit");
 
         try {
-            KeysGenerator.saveFile(keyPair.getProtectedPKCS8prvtKey(), userID + ".key", "..");
-            KeysGenerator.saveFile(keyPair.getX509EncodedPublicKey(), userID + ".pub", "..");
+            KeysGenerator.saveFile(keyPair.getProtectedPKCS8prvtKey(), userID + ".key", "../generatedKeys");
+            KeysGenerator.saveFile(keyPair.getX509EncodedPublicKey(), userID + ".pub", "../generatedKeys");
         } catch (IOException e){
             System.out.println("IO Exception while saving key file. ");
         }
