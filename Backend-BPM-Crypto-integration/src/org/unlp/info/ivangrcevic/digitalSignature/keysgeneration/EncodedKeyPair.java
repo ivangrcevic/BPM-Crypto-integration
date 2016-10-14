@@ -1,22 +1,24 @@
 package org.unlp.info.ivangrcevic.digitalSignature.keysgeneration;
 
+import org.bouncycastle.util.io.pem.PemObject;
+
 /**
  * Created by ivangrcevic on 8/10/16.
  */
 public class EncodedKeyPair {
 
-    private byte[] protectedPKCS8prvtKey;
-    private byte[] x509EncodedPublicKey;
+    private PemObject protectedPKCS8prvtKey;
+    private PemObject x509EncodedCertificate;
 
-    public byte[] getProtectedPKCS8prvtKey() {
+    public PemObject getProtectedPKCS8prvtKey() {
         return protectedPKCS8prvtKey;
     }
-    public byte[] getX509EncodedPublicKey() {
-        return x509EncodedPublicKey;
+    public PemObject getX509EncodedCertificate() {
+        return x509EncodedCertificate;
     }
-    public EncodedKeyPair(byte[] protectedPKCS8prvtKey, byte[] x509EncodedPublicKey) {
+    public EncodedKeyPair(PemObject protectedPKCS8prvtKey, PemObject x509EncodedCertificate) {
         this.protectedPKCS8prvtKey = protectedPKCS8prvtKey;
-        this.x509EncodedPublicKey = x509EncodedPublicKey;
+        this.x509EncodedCertificate = x509EncodedCertificate;
     }
 
 }

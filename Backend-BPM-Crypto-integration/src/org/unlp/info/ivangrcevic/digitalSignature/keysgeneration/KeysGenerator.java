@@ -1,13 +1,27 @@
 package org.unlp.info.ivangrcevic.digitalSignature.keysgeneration;
 
-import javax.crypto.*;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.PBEParameterSpec;
-import javax.xml.bind.DatatypeConverter;
-import java.io.FileOutputStream;
+import org.bouncycastle.asn1.ASN1TaggedObject;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.*;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509v1CertificateBuilder;
+import org.bouncycastle.openssl.PKCS8Generator;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8EncryptorBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.OutputEncryptor;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.io.pem.PemGenerationException;
+import org.bouncycastle.util.io.pem.PemObject;
+
+
+import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.*;
-import java.security.spec.X509EncodedKeySpec;
+import java.util.Date;
 import java.util.Random;
 
 /**
@@ -16,10 +30,8 @@ import java.util.Random;
 public class KeysGenerator {
 
     private static String KEY_ALGORITHM = "RSA";
-    private static String RANDOM_ALGORITHM = "SHA1PRNG";
     private static String EXCEPTION_ALGORITHM_TEXT = "No such algorithm or provider.";
     private static String EXCEPTION_PBE_TEXT = "Private Key PBE cipher related exception.";
-    private static String PBE_ALGORITHM = "PBEWithSHA1AndDESede";
 
     private static final Random RANDOM = new SecureRandom();
 
@@ -33,21 +45,23 @@ public class KeysGenerator {
         try {
 
             //get KeyGenerator and random instance and initialize the generator with the secure random
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance(KEY_ALGORITHM);
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance(KEY_ALGORITHM, "BC");
             SecureRandom random = SecureRandom.getInstanceStrong();
             keyGen.initialize(1024, random);
             //generate the key pair
             KeyPair pair = keyGen.generateKeyPair();
             PrivateKey priv = pair.getPrivate();
-            PublicKey pub = pair.getPublic();
+            /*TODO: importante! usar una clave privada que provenga de la CA*/
+            PrivateKey caPrivateKey = priv;
             //store keys in files
-            byte[] protectedPKCS8prvtKey = protectPrivateKey(priv, passwordForPrivateKey);
-            byte[] x509EncodedPublicKey = encodePublicKey(pub);
-            return new EncodedKeyPair(protectedPKCS8prvtKey, x509EncodedPublicKey);
+            PemObject protectedPKCS8prvtKey = protectPrivateKey(priv, passwordForPrivateKey);
+            PemObject x509Cert = createCertificate(pair, caPrivateKey);
+            return new EncodedKeyPair(protectedPKCS8prvtKey, x509Cert);
 
-        } catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | OperatorCreationException
+                | IOException e) {
 
-            System.out.println("No such algorithm or provider '"+RANDOM_ALGORITHM+"'");
+            System.out.println("No such algorithm or provider ");
             e.printStackTrace();
             throw new RuntimeException(EXCEPTION_ALGORITHM_TEXT);
 
@@ -55,77 +69,47 @@ public class KeysGenerator {
 
     }
 
-    public static void saveFile(byte[] protectedPKCS8prvtKey, String fileName, String path) throws IOException {
-        FileOutputStream fos = new FileOutputStream(path + "/"+fileName);
-        fos.write(protectedPKCS8prvtKey);
-        fos.close();
+    public static void saveToFile(PemObject pemObject, String fileName, String path) throws IOException {
+        JcaPEMWriter pemWrt = new JcaPEMWriter(new FileWriter(path +"/"+ fileName));
+        pemWrt.writeObject(pemObject);
+        pemWrt.close();
     }
 
-    private static byte[] encodePublicKey(PublicKey publicKey) {
+    private static PemObject createCertificate(KeyPair keyPair, PrivateKey caPrivatekey) throws OperatorCreationException, IOException {
         /*
         * Source:
-        * http://snipplr.com/view/18368/
+        * http://www.bouncycastle.org/wiki/display/JA1/BC+Version+2+APIs#BCVersion2APIs-ASimpleOperatorExample
+        * http://stackoverflow.com/questions/12466489/generating-x-509-certificate-using-bouncy-castle-java-api
+        * http://stackoverflow.com/questions/10040977/unable-to-write-csr-generated-using-org-bouncycastle-asn1-pkcs-certificationrequ
         * */
-        X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(publicKey.getEncoded());
-        return x509EncodedKeySpec.getEncoded();
+        ContentSigner sigGen = new JcaContentSignerBuilder("SHA1withRSA").setProvider("BC").build(caPrivatekey);
+        SubjectPublicKeyInfo subPubKeyInfo = SubjectPublicKeyInfo.getInstance(ASN1TaggedObject.fromByteArray(keyPair.getPublic().getEncoded()));
+        Date startDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
+        Date endDate = new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000);
+        X509v1CertificateBuilder certBuilder = new X509v1CertificateBuilder(
+                new X500Name("CN=Test"),
+                BigInteger.ONE,
+                startDate, endDate,
+                new X500Name("CN=Test"),
+                subPubKeyInfo
+        );
+        X509CertificateHolder certHolder = certBuilder.build(sigGen);
+        //para leerlo X509CertificateHolder(obj.getContent())
+        return new PemObject("CERTIFICATE", certHolder.getEncoded());
     }
 
-    private static byte[] protectPrivateKey(PrivateKey privateKey, String password) {
+    private static PemObject protectPrivateKey(PrivateKey privateKey, String password) throws NoSuchAlgorithmException, OperatorCreationException, PemGenerationException {
         /*
         * Source:
-        * http://stackoverflow.com/questions/34386901/java-write-and-read-password-based-encrypted-private-key
-        * Importante para hacer funcionar la protección de la clave privada con PBE, sino falla
-        * esto pbeCipher.init(Cipher.ENCRYPT_MODE, pbeKey, pbeParamSpec); por "IllegalKeySize".
-        * http://stackoverflow.com/questions/6481627/java-security-illegal-key-size-or-default-parameters
+        * http://stackoverflow.com/questions/14597371/encrypt-a-private-key-with-password-using-bouncycastle#
         * */
 
-        // unencrypted PKCS#8 private key (DER)
-        byte[] encodedPrivateKey = privateKey.getEncoded();
-
-        String base64 = DatatypeConverter.printBase64Binary(encodedPrivateKey);
-        String lines = "";
-        for (int i = 0; i < base64.length(); i = i + 64) {
-            lines += base64.substring(i, (i+64)<= base64.length() ? (i+64) : base64.length())+ "\n";
-        }
-        String pemFormatted = "-----BEGIN RSA PRIVATE KEY-----\n" +
-                lines+
-                "\n-----END RSA PRIVATE KEY-----\n";
-
-        return pemFormatted.getBytes();
-
-//        try {
-//            // create a random salt (16 bytes)
-//            byte[] salt = new byte[8];
-//            RANDOM.nextBytes(salt);
-//
-//            // create PBE key from password
-//            PBEParameterSpec pbeParamSpec = new PBEParameterSpec(salt, 20);
-//            PBEKeySpec pbeKeySpec = new PBEKeySpec(password.toCharArray());
-//            SecretKeyFactory keyFac = SecretKeyFactory.getInstance(PBE_ALGORITHM);
-//            SecretKey pbeKey = keyFac.generateSecret(pbeKeySpec);
-//
-//            // encrypt private key
-//            Cipher pbeCipher = Cipher.getInstance(PBE_ALGORITHM);
-//            pbeCipher.init(Cipher.ENCRYPT_MODE, pbeKey, pbeParamSpec);
-//
-//            // Encrypt the encoded Private Key with the PBE key
-//            byte[] cipherText = pbeCipher.doFinal(encodedPrivateKey);
-//
-//            // Now construct  PKCS #8 EncryptedPrivateKeyInfo object
-//            AlgorithmParameters algparms = AlgorithmParameters.getInstance(PBE_ALGORITHM);
-//            algparms.init(pbeParamSpec);
-//            EncryptedPrivateKeyInfo encinfo = new EncryptedPrivateKeyInfo(algparms, cipherText);
-//
-//            // Encoded PKCS#8 encrypted key
-//            byte[] encryptedPkcs8 = encinfo.getEncoded();
-//
-//            return encryptedPkcs8;
-//
-//        } catch (GeneralSecurityException | IOException e) {
-//            System.out.println("Exception caught while trying to PBE protect the private key.");
-//            e.printStackTrace();
-//            throw new RuntimeException(EXCEPTION_PBE_TEXT);
-//        }
+        JceOpenSSLPKCS8EncryptorBuilder encryptorBuilder = new JceOpenSSLPKCS8EncryptorBuilder(PKCS8Generator.PBE_SHA1_3DES);
+        encryptorBuilder.setRandom(SecureRandom.getInstanceStrong());
+        encryptorBuilder.setPasssword(password.toCharArray());
+        OutputEncryptor outputEncryptor = encryptorBuilder.build();
+        JcaPKCS8Generator gen = new JcaPKCS8Generator(privateKey,outputEncryptor);
+        return gen.generate();
 
     }
 }
