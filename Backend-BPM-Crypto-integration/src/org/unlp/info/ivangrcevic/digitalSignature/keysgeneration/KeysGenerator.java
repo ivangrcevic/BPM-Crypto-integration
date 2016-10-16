@@ -31,7 +31,6 @@ public class KeysGenerator {
 
     private static String KEY_ALGORITHM = "RSA";
     private static String EXCEPTION_ALGORITHM_TEXT = "No such algorithm or provider.";
-    private static String EXCEPTION_PBE_TEXT = "Private Key PBE cipher related exception.";
 
     private static final Random RANDOM = new SecureRandom();
 
