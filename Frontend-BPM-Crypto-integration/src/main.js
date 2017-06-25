@@ -3,7 +3,7 @@
  */
 
 var callback = function(sig) {
-    $("#signatureInput").val(sig);
+    $("#signatureInput").val(btoa(sig));
     $("#signatureView").show();
 };
 

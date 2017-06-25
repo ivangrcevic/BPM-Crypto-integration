@@ -1,16 +1,12 @@
 package org.unlp.info.ivangrcevic.digitalSignature;
 
+import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
+import com.sun.org.apache.xml.internal.security.utils.Base64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.Strings;
-import org.unlp.info.ivangrcevic.digitalSignature.keysgeneration.KeysGenerator;
 import org.unlp.info.ivangrcevic.digitalSignature.verifier.Verifier;
+import sun.misc.BASE64Decoder;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.security.Security;
 
@@ -19,9 +15,8 @@ import java.security.Security;
  */
 public class VerifierMain {
 
-    static String signatureString = "FãÍ¨\u009Fý4\u0007£¨æo´õM\u001B[MµÿÓùp\\\u0018LØÝ=\u0092lÒ\u0098~\u008A\u0085\u001BÊÝ¨\u008B\u001BÃ 7 ¾º\u008Dµ\u0003>þ\u0001\u0089cQÈ\u0097Ü\u0091ì²ª8\u001D\bñ§¨\u000F(zuóö¤Æu[\n" +
-            "¤\u001Bá½\\ÙJ+\u007F´;+\u0089úrb7\u008A9%P4á\u001D\u0096\u0084³\u008Fb8Þx@:ms\u0081±m\t\u008E\u0001ë\u001DPøÉ";
-    static String textToVerify = "Hola como estás?";
+    static String signatureB64 = "jIDtp58tw6sJG+4IvATSTJb0/tXaDwxbja46zx+TwthxsIH/MuGq8hoWoMDWx0ZGRuBGFyYXRKhP4SL0sH1UzyAj+OU+zGOpSFzt+oV8CifZZmErfXT7zB8f1LlFYi7rG5CrRcX6kZY0XunUFCf8Rss4IFAF0wtVQJYUdSwY9+U=";
+    static String textToVerify = "Hola probando";
 
 
     public static void main (String[] args) {
@@ -34,7 +29,7 @@ public class VerifierMain {
 
             /*Path fileLocation = Paths.get("../generatedKeys/signature");
             byte[] signature = Files.readAllBytes(fileLocation);*/
-            byte[] signature = signatureString.getBytes();
+            byte[] signature = Base64.decode(signatureB64);
 
             boolean result = Verifier.verify(publicKey, signature, textToVerify);
 
@@ -45,6 +40,8 @@ public class VerifierMain {
             }
 
         } catch (IOException e) {
+            System.out.println(e.getLocalizedMessage());
+        } catch (Base64DecodingException e) {
             System.out.println(e.getLocalizedMessage());
         }
 
