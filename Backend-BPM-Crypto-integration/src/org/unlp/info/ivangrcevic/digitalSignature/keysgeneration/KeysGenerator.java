@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.*;
 import java.util.Date;
-import java.util.Random;
 
 /**
  * Created by ivangrcevic on 8/10/16.
@@ -31,8 +30,6 @@ public class KeysGenerator {
 
     private static String KEY_ALGORITHM = "RSA";
     private static String EXCEPTION_ALGORITHM_TEXT = "No such algorithm or provider.";
-
-    private static final Random RANDOM = new SecureRandom();
 
     public static EncodedKeyPair generateKeyPair(String passwordForPrivateKey) {
 
@@ -50,7 +47,10 @@ public class KeysGenerator {
             //generate the key pair
             KeyPair pair = keyGen.generateKeyPair();
             PrivateKey priv = pair.getPrivate();
-            /*TODO: importante! usar una clave privada que provenga de la CA*/
+            /* TODO: importante! usar una clave privada que provenga de la CA.
+               Esto no es posible porque no dispongo de un certificado real de una CA,
+               pero si dispusiera de uno, aquí debería accederlo y utilizarlo
+               */
             PrivateKey caPrivateKey = priv;
             //store keys in files
             PemObject protectedPKCS8prvtKey = protectPrivateKey(priv, passwordForPrivateKey);
