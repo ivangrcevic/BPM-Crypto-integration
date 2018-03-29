@@ -21,7 +21,7 @@ public class Main {
                 +"_"+ now.get(Calendar.HOUR_OF_DAY) +"-"+ now.get(Calendar.MINUTE) +"-"+ now.get(Calendar.SECOND);
         String userID = "prueba"+ suffix;
 
-        EncodedKeyPair keyPair = KeysGenerator.generateKeyPair("changeit");
+        EncodedKeyPair keyPair = KeysGenerator.generateKeyPair("Test", "changeit");
 
         try {
             //http://serverfault.com/questions/9708/what-is-a-pem-file-and-how-does-it-differ-from-other-openssl-generated-key-file

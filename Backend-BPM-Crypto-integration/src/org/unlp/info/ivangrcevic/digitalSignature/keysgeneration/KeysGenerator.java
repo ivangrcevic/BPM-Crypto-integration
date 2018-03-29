@@ -31,7 +31,7 @@ public class KeysGenerator {
     private static String KEY_ALGORITHM = "RSA";
     private static String EXCEPTION_ALGORITHM_TEXT = "No such algorithm or provider.";
 
-    public static EncodedKeyPair generateKeyPair(String passwordForPrivateKey) {
+    public static EncodedKeyPair generateKeyPair(String name, String passwordForPrivateKey) {
 
         /*
         * Source:
@@ -54,7 +54,7 @@ public class KeysGenerator {
             PrivateKey caPrivateKey = priv;
             //store keys in files
             PemObject protectedPKCS8prvtKey = protectPrivateKey(priv, passwordForPrivateKey);
-            PemObject x509Cert = createCertificate(pair, caPrivateKey);
+            PemObject x509Cert = createCertificate(pair, caPrivateKey, name);
             return new EncodedKeyPair(protectedPKCS8prvtKey, x509Cert);
 
         } catch (NoSuchAlgorithmException | NoSuchProviderException | OperatorCreationException
@@ -74,22 +74,23 @@ public class KeysGenerator {
         pemWrt.close();
     }
 
-    private static PemObject createCertificate(KeyPair keyPair, PrivateKey caPrivatekey) throws OperatorCreationException, IOException {
+    private static PemObject createCertificate(KeyPair keyPair, PrivateKey caPrivatekey, String name) throws OperatorCreationException, IOException {
         /*
         * Source:
         * http://www.bouncycastle.org/wiki/display/JA1/BC+Version+2+APIs#BCVersion2APIs-ASimpleOperatorExample
         * http://stackoverflow.com/questions/12466489/generating-x-509-certificate-using-bouncy-castle-java-api
         * http://stackoverflow.com/questions/10040977/unable-to-write-csr-generated-using-org-bouncycastle-asn1-pkcs-certificationrequ
         * */
+
         ContentSigner sigGen = new JcaContentSignerBuilder("SHA1withRSA").setProvider("BC").build(caPrivatekey);
         SubjectPublicKeyInfo subPubKeyInfo = SubjectPublicKeyInfo.getInstance(ASN1TaggedObject.fromByteArray(keyPair.getPublic().getEncoded()));
         Date startDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
         Date endDate = new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000);
         X509v1CertificateBuilder certBuilder = new X509v1CertificateBuilder(
-                new X500Name("CN=Test"),
+                new X500Name("CN=" + name),
                 BigInteger.ONE,
                 startDate, endDate,
-                new X500Name("CN=Test"),
+                new X500Name("CN=" + name),
                 subPubKeyInfo
         );
         X509CertificateHolder certHolder = certBuilder.build(sigGen);
