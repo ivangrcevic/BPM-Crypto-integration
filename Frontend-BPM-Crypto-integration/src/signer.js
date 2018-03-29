@@ -76,7 +76,8 @@
             promptForPassword(texts).then(function (password){
                 doLoadPrivateKeyFromPEM(file, password).then(function (privateKey){
                     var textToSign = textToSignGetter();
-                    var signature = doSign(privateKey, textToSign);
+                    var encoded = btoa(unescape(encodeURIComponent(textToSign)));
+                    var signature = doSign(privateKey, btoa(encoded));
                     callback(signature);
                 });
             }, function (err){
