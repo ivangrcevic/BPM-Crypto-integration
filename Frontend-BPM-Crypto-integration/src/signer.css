@@ -1,7 +1,12 @@
-.sign-button {
-    display: none;
-    margin-left: 10px;
+.digital-signature-uic .sign-button {
+     display: inline-block;
+     margin-left: 10px;
+ }
+
+.digital-signature-uic .error-text {
+    color: red;
 }
-.sign-button.visible {
-    display: inline-block;
+
+.digital-signature-uic .success-text {
+    color: green;
 }

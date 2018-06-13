@@ -49,18 +49,20 @@ function digitalSignatureController($scope, $element, $q) {
     var TEXTS = {
         "es": {
             "label.text": "Firmar con certificado:",
-            "signButton.text": "Firmar",
-            "psswdPromt.text": "Ingrese contraseña... "
+            "label.password": "Contraseña:",
+            "error.text": "Contraseña incorrecta o clave privada inválida.",
+            "success.text": "Firma generada correctamente.",
+            "signButton.text": "Firmar"
         },
         "en": {
             "label.text": "Sign with certificate:",
-            "signButton.text": "Sign",
-            "psswdPromt.text": "Enter Password... "
+            "label.password": "Password:",
+            "error.text": "Wrong password or invalid private key file.",
+            "success.text": "Signature successfully generated.",
+            "signButton.text": "Sign"
         }
     };
     var LANGUAGE = "es";
-
-    $scope.texts = TEXTS[LANGUAGE];
 
     var fileInput = $element.find("input")[0]
     fileInput.onchange = function (changeEvent) {
@@ -69,23 +71,29 @@ function digitalSignatureController($scope, $element, $q) {
         });
     };
 
+    $scope.signSuccess = false;
+    $scope.errorFound = false;
+    $scope.texts = TEXTS[LANGUAGE];
+    $scope.password = "";
+
     $scope.sign = function (){
-        promptForPassword().then(function (password){
-            doLoadPrivateKeyFromPEM($scope.file, password).then(function (privateKey){
-                if(privateKey){
-                    var jsonData = JSON.stringify($scope.properties.formOutput);
-                    var textToSign = btoa(unescape(encodeURIComponent(jsonData)));
-                    var signatureString = btoa(doSign(privateKey, textToSign));
-                    console.log("json Data " + jsonData);
-                    console.log("textToSign " + textToSign);
-                    console.log("signature " + signatureString);
-                    $scope.properties.value = signatureString;
-                } else {
-                    alert("Invalid password");
-                }
-            });
-        }, function (err){
-            console.log(err);
+        $scope.errorFound = false;
+        $scope.signSuccess = false;
+        doLoadPrivateKeyFromPEM($scope.file, $scope.password).then(function (privateKey){
+            if(privateKey){
+                var jsonData = JSON.stringify($scope.properties.formOutput);
+                var textToSign = btoa(unescape(encodeURIComponent(jsonData)));
+                var signatureString = btoa(doSign(privateKey, textToSign));
+                console.log("json Data " + jsonData);
+                console.log("textToSign " + textToSign);
+                console.log("signature " + signatureString);
+                $scope.properties.value = signatureString;
+                $scope.signSuccess = true;
+            } else {
+                $scope.errorFound = true;
+            }
+        }, function (error) {
+            $scope.errorFound = true;
         });
     }
 
