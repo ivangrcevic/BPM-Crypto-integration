@@ -82,7 +82,7 @@ public class KeysGenerator {
         * http://stackoverflow.com/questions/10040977/unable-to-write-csr-generated-using-org-bouncycastle-asn1-pkcs-certificationrequ
         * */
 
-        ContentSigner sigGen = new JcaContentSignerBuilder("SHA1withRSA").setProvider("BC").build(caPrivatekey);
+        ContentSigner sigGen = new JcaContentSignerBuilder("SHA512withRSA").setProvider("BC").build(caPrivatekey);
         SubjectPublicKeyInfo subPubKeyInfo = SubjectPublicKeyInfo.getInstance(ASN1TaggedObject.fromByteArray(keyPair.getPublic().getEncoded()));
         Date startDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
         Date endDate = new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000);
