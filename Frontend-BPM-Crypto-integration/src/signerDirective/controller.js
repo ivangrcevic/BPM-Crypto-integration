@@ -28,9 +28,8 @@ function digitalSignatureController($scope, $element, $q) {
     }
 
     function doSign (privateKey, string) {
-        //Create message digest with SHA1
-        // TODO : USAR HMAC!!!!
-        var md = forge.md.sha1.create();
+        //Create message digest with SHA512 (SHA-2)
+        var md = forge.md.sha512.create();
         md.update(string);
         //sign with RSA algorithm (default)
         return privateKey.sign(md);
